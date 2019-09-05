@@ -751,6 +751,29 @@ public class XSSFSheet extends POIXMLDocumentPart implements Sheet  {
      */
     @Override
     public XSSFRow createRow(int rownum) {
+        return internalCreateRow(rownum, -1);
+    }
+
+    public List<XSSFRow> createRows(int startRow, int endRow) {
+        int rowIndex = -1;
+        List<XSSFRow> result = new ArrayList<XSSFRow>(Math.max(startRow, endRow) - Math.min(startRow, endRow) + 1);
+        for (int rownum = startRow; rownum <= endRow; rownum++) {
+            // Performance optimization: explicit boxing is slightly faster than auto-unboxing, though may use more memory
+            final Integer rownumI = new Integer(rownum); // NOSONAR
+            if (_rows.get(rownumI) != null) {
+                rowIndex = -1;
+            } else {
+                if (rowIndex < 0)
+                    rowIndex = _rows.headMap(rownumI).size();
+                else
+                    rowIndex++;
+            }
+            result.add(internalCreateRow(rownum, rowIndex));
+        }
+        return result;
+    }
+
+    protected XSSFRow internalCreateRow(int rownum, int rowIndex) {
         // Performance optimization: explicit boxing is slightly faster than auto-unboxing, though may use more memory
         final Integer rownumI = new Integer(rownum); // NOSONAR
         CTRow ctRow;
@@ -772,9 +795,12 @@ public class XSSFSheet extends POIXMLDocumentPart implements Sheet  {
                 // we can append the new row at the end
                 ctRow = worksheet.getSheetData().addNewRow();
             } else {
-                // get number of rows where row index < rownum
-                // --> this tells us where our row should go
-                int idx = _rows.headMap(rownumI).size();
+                int idx = rowIndex;
+                if (idx < 0) {
+                    // get number of rows where row index < rownum
+                    // --> this tells us where our row should go
+                    idx = _rows.headMap(rownumI).size(); // slow operation !!!
+                }
                 ctRow = worksheet.getSheetData().insertNewRow(idx);
             }
         }
