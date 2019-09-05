@@ -756,7 +756,7 @@ public class XSSFSheet extends POIXMLDocumentPart implements Sheet  {
 
     public List<XSSFRow> createRows(int startRow, int endRow) {
         int rowIndex = -1;
-        List<XSSFRow> result = new ArrayList<XSSFRow>(Math.max(startRow, endRow) - Math.min(startRow, endRow) + 1);
+        List<XSSFRow> result = new ArrayList<XSSFRow>(endRow - startRow + 1);
         for (int rownum = startRow; rownum <= endRow; rownum++) {
             // Performance optimization: explicit boxing is slightly faster than auto-unboxing, though may use more memory
             final Integer rownumI = new Integer(rownum); // NOSONAR
