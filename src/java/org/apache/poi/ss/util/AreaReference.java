@@ -23,6 +23,7 @@ import java.util.StringTokenizer;
 
 import org.apache.poi.ss.SpreadsheetVersion;
 import org.apache.poi.util.Removal;
+import org.apache.poi.util.StringUtil;
 
 public class AreaReference {
 
@@ -171,14 +172,7 @@ public class AreaReference {
      *  {@link #generateContiguous(SpreadsheetVersion, String)})
      */
     public static boolean isContiguous(String reference) {
-       // If there's a sheet name, strip it off
-       int sheetRefEnd = reference.indexOf('!'); 
-       if(sheetRefEnd != -1) {
-          reference = reference.substring(sheetRefEnd);
-       }
-
-       // Check for the , as a sign of non-coniguous
-       return !reference.contains(",");
+        return splitAreaReferences(reference).length == 1;
     }
 
     public static AreaReference getWholeRow(SpreadsheetVersion version, String start, String end) {
@@ -237,13 +231,11 @@ public class AreaReference {
             version = DEFAULT_SPREADSHEET_VERSION; // how the code used to behave. 
         }
         List<AreaReference> refs = new ArrayList<AreaReference>();
-        StringTokenizer st = new StringTokenizer(reference, ",");
-        while(st.hasMoreTokens()) {
-            refs.add(
-                    new AreaReference(st.nextToken(), version)
-            );
+        String[] splitReferences = splitAreaReferences(reference);
+        for (String ref : splitReferences) {
+            refs.add(new AreaReference(ref, version));
         }
-        return refs.toArray(new AreaReference[refs.size()]);
+        return refs.toArray(new AreaReference[0]);
     }
 
     /**
@@ -417,5 +409,32 @@ public class AreaReference {
         String sheetName = partA.substring(0, plingPos + 1); // +1 to include delimiter
         
         return new String [] { partA, sheetName + partB, };
+    }
+
+    /**
+     * Splits a comma-separated area references string into an array of
+     * individual references
+     * @param reference Area references, i.e. A1:B2, 'Sheet1'!A1:B2
+     * @return Area references in an array, size >= 1
+     */
+    private static String[] splitAreaReferences(String reference) {
+        List<String> results = new ArrayList<String>();
+        String currentSegment = "";
+        StringTokenizer st = new StringTokenizer(reference, ",");
+        while(st.hasMoreTokens()) {
+            if (currentSegment.length() > 0) {
+                currentSegment += ",";
+            }
+            currentSegment += st.nextToken();
+            int numSingleQuotes = StringUtil.countMatches(currentSegment, '\'');
+            if (numSingleQuotes == 0 || numSingleQuotes == 2) {
+                results.add(currentSegment);
+                currentSegment = "";
+            }
+        }
+        if (currentSegment.length() > 0) {
+            results.add(currentSegment);
+        }
+        return results.toArray(new String[0]);
     }
 }
