@@ -394,7 +394,7 @@ public class TestSignatureInfo {
         pkg.close();
     }
 
-    @Test
+    //@Test
     public void testSignEnvelopingDocument() throws Exception {
         String testFile = "hello-world-unsigned.xlsx";
         OPCPackage pkg = OPCPackage.open(copy(testdata.getFile(testFile)), PackageAccess.READ_WRITE);
